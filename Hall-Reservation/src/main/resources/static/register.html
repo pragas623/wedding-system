@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page-wrapper">
+    <div class="container">
+        <div class="center-card card">
+            <h2 class="form-title">Register</h2>
+            <div id="messageBox"></div>
+
+            <label>Full Name</label>
+            <input type="text" id="fullName" placeholder="Enter full name">
+
+            <label>Email</label>
+            <input type="email" id="email" placeholder="Enter email">
+
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password">
+
+            <label>Role</label>
+            <select id="role">
+                <option value="CLIENT">CLIENT</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="STAFF">STAFF</option>
+            </select>
+
+            <button class="btn-primary" onclick="registerUser()">Register</button>
+
+            <div class="page-links">
+                Already have an account?
+                <a href="/login.html">Login here</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showMessage(text, type = "success") {
+        const box = document.getElementById("messageBox");
+        box.innerHTML = `<div class="alert ${type === "success" ? "alert-success" : "alert-error"}">${text}</div>`;
+    }
+
+    async function registerUser() {
+        const payload = {
+            fullName: document.getElementById("fullName").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            password: document.getElementById("password").value.trim(),
+            role: document.getElementById("role").value
+        };
+
+        const res = await fetch("/users/register", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage(data.error, "error");
+        } else {
+            showMessage(data.message, "success");
+            setTimeout(() => {
+                window.location.href = "/login.html";
+            }, 1000);
+        }
+    }
+</script>
+</body>
+</html>

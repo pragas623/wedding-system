@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page-wrapper">
+    <div class="container">
+
+        <div class="topbar">
+            <div class="brand">Wedding Management Dashboard</div>
+            <div class="nav-buttons">
+                <button class="btn-primary btn-inline" onclick="goPage('/index.html')">Hall</button>
+                <button class="btn-primary btn-inline" onclick="goPage('/menu.html')">Menu</button>
+                <button class="btn-secondary btn-inline" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="card hero">
+            <h1>Dashboard</h1>
+            <p>System overview with quick access to all modules.</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Total Users</h3>
+                <p id="totalUsers">0</p>
+            </div>
+            <div class="stat-box">
+                <h3>Total Bookings</h3>
+                <p id="totalBookings">0</p>
+            </div>
+            <div class="stat-box">
+                <h3>Total Menus</h3>
+                <p id="totalMenus">0</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2 class="form-title">Quick Navigation</h2>
+                <button class="btn-primary" onclick="goPage('/index.html')">Go to Hall Reservation</button>
+                <button class="btn-primary" onclick="goPage('/menu.html')">Go to Menu Management</button>
+            </div>
+
+            <div class="card">
+                <h2 class="form-title">Logged User</h2>
+                <p><strong>Name:</strong> <span id="userName"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>Role:</strong> <span id="userRole"></span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+    if (!user) {
+        alert("Please login first");
+        window.location.href = "/login.html";
+    }
+
+    function goPage(page) {
+        window.location.href = page;
+    }
+
+    function logout() {
+        localStorage.removeItem("loggedUser");
+        window.location.href = "/login.html";
+    }
+
+    async function loadStats() {
+        const users = await fetch("/users").then(r => r.json());
+        const bookings = await fetch("/hall").then(r => r.json());
+        const menus = await fetch("/menu").then(r => r.json());
+
+        document.getElementById("totalUsers").innerText = users.length;
+        document.getElementById("totalBookings").innerText = bookings.length;
+        document.getElementById("totalMenus").innerText = menus.length;
+    }
+
+    function loadUserDetails() {
+        document.getElementById("userName").innerText = user.fullName || "-";
+        document.getElementById("userEmail").innerText = user.email || "-";
+        document.getElementById("userRole").innerText = user.role || "-";
+    }
+
+    loadUserDetails();
+    loadStats();
+</script>
+</body>
+</html>

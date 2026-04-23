@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hall Reservation</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page-wrapper">
+    <div class="container">
+        <div class="topbar">
+            <div class="brand">Hall Reservation</div>
+            <div class="nav-buttons">
+                <button class="btn-primary btn-inline" onclick="goPage('/dashboard.html')">Dashboard</button>
+                <button class="btn-primary btn-inline" onclick="goPage('/menu.html')">Menu</button>
+                <button class="btn-secondary btn-inline" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div id="messageBox"></div>
+
+        <div class="card">
+            <h2 class="form-title">Add Booking</h2>
+
+            <label>Customer Name</label>
+            <input type="text" id="customerName" placeholder="Customer name">
+
+            <label>Hall Name</label>
+            <select id="hallName">
+                <option value="Grand Hall">Grand Hall</option>
+                <option value="Royal Hall">Royal Hall</option>
+                <option value="Garden Hall">Garden Hall</option>
+            </select>
+
+            <label>Booking Date</label>
+            <input type="date" id="bookingDate">
+
+            <label>Guest Count</label>
+            <input type="number" id="guestCount" placeholder="Guest count">
+
+            <label>Status</label>
+            <select id="status">
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+
+            <button class="btn-primary" onclick="addBooking()">Create Booking</button>
+        </div>
+
+        <div class="card">
+            <h2 class="form-title">Bookings</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Hall</th>
+                    <th>Date</th>
+                    <th>Guests</th>
+                    <th>Status</th>
+                    <th>CRUD</th>
+                </tr>
+                </thead>
+                <tbody id="bookingTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+    if (!user) {
+        alert("Please login first");
+        window.location.href = "/login.html";
+    }
+
+    function goPage(page) {
+        window.location.href = page;
+    }
+
+    function logout() {
+        localStorage.removeItem("loggedUser");
+        window.location.href = "/login.html";
+    }
+
+    function showMessage(text, type = "success") {
+        document.getElementById("messageBox").innerHTML =
+            `<div class="alert ${type === "success" ? "alert-success" : "alert-error"}">${text}</div>`;
+    }
+
+    async function loadBookings() {
+        const endpoint = user.role === "ADMIN" ? "/hall" : `/hall/user/${user.id}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+
+        const tbody = document.getElementById("bookingTableBody");
+        tbody.innerHTML = "";
+
+        data.forEach(b => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${b.id}</td>
+                    <td>${b.customerName}</td>
+                    <td>${b.hallName}</td>
+                    <td>${b.bookingDate}</td>
+                    <td>${b.guestCount}</td>
+                    <td>${b.status}</td>
+                    <td>
+                        <button class="btn-warning btn-inline" onclick='updateBooking(${b.id}, ${JSON.stringify(JSON.stringify(b.customerName))}, ${JSON.stringify(JSON.stringify(b.hallName))}, ${JSON.stringify(JSON.stringify(b.bookingDate))}, ${b.guestCount}, ${JSON.stringify(JSON.stringify(b.status || "Pending"))})'>Update</button>
+                        <button class="btn-danger btn-inline" onclick='deleteBooking(${b.id})'>Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function addBooking() {
+        const payload = {
+            customerName: document.getElementById("customerName").value.trim(),
+            hallName: document.getElementById("hallName").value,
+            bookingDate: document.getElementById("bookingDate").value,
+            guestCount: parseInt(document.getElementById("guestCount").value),
+            status: document.getElementById("status").value,
+            userId: user.id
+        };
+
+        const res = await fetch("/hall", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage(data.error, "error");
+        } else {
+            showMessage(data.message, "success");
+            document.getElementById("customerName").value = "";
+            document.getElementById("bookingDate").value = "";
+            document.getElementById("guestCount").value = "";
+            document.getElementById("status").value = "Pending";
+            loadBookings();
+        }
+    }
+
+    async function updateBooking(id, oldCustomer, oldHall, oldDate, oldGuest, oldStatus) {
+        const customerName = prompt("Update customer name:", JSON.parse(oldCustomer));
+        if (customerName === null) return;
+
+        const hallName = prompt("Update hall name:", JSON.parse(oldHall));
+        if (hallName === null) return;
+
+        const bookingDate = prompt("Update booking date (YYYY-MM-DD):", JSON.parse(oldDate));
+        if (bookingDate === null) return;
+
+        const guestCount = prompt("Update guest count:", oldGuest);
+        if (guestCount === null) return;
+
+        const status = prompt("Update status (Pending / Confirmed / Cancelled):", JSON.parse(oldStatus));
+        if (status === null) return;
+
+        const payload = {
+            customerName: customerName.trim(),
+            hallName: hallName.trim(),
+            bookingDate: bookingDate.trim(),
+            guestCount: parseInt(guestCount),
+            status: status.trim(),
+            userId: user.id
+        };
+
+        const res = await fetch(`/hall/${id}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage(data.error, "error");
+        } else {
+            showMessage(data.message, "success");
+            loadBookings();
+        }
+    }
+
+    async function deleteBooking(id) {
+        const ok = confirm("Are you sure you want to delete this booking?");
+        if (!ok) return;
+
+        const res = await fetch(`/hall/${id}`, {
+            method: "DELETE"
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage(data.error, "error");
+        } else {
+            showMessage(data.message, "success");
+            loadBookings();
+        }
+    }
+
+    loadBookings();
+</script>
+</body>
+</html>
